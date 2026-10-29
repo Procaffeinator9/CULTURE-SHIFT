@@ -4,6 +4,10 @@ dist/
 .nitro/
 .tanstack/
 .vercel/
+.grok/
+artifacts/
+AGENTS.md
+.node_modules.lock
 .env
 .env.*
 !.env.example
@@ -12,4 +16,3 @@ dist/
 *.sqlite
 *.sqlite3
 coverage/
-.grok/og-pending

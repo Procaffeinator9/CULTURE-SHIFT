@@ -24,7 +24,6 @@ These work in the app:
 - Opportunity score that renormalizes over measurable dimensions and refuses to score when fewer than two exist.
 - Culture Simulator with pessimistic, baseline, and optimistic scenarios. Financial outputs come from formulas.
 - Culture Half-Life Lab, including labelled synthetic series so the formula can be inspected.
-- Three research roles in one optional Grok request. If the model is unavailable, a non-AI fallback is labelled as such.
 - Investigations saved in the browser: rename, reopen, compare, delete.
 - Markdown and JSON export.
 - Settings for weights, the CSV template, and a clear-data action.
@@ -47,16 +46,14 @@ flowchart LR
   UI --> Engine[Analytics engine]
   UI --> Sim[Simulator]
   UI --> Store[Browser storage]
-  UI --> Agents[Optional Grok request]
-  Agents --> Engine
   Engine --> Report[Markdown and JSON]
   Sim --> Report
 ```
 
-- The interface is one TanStack Start app. There is no separate FastAPI service in this build.
-- The brief, the score, the half-life, and the simulator are pure functions. A model cannot overwrite them.
+- The interface is one TanStack Start app. There is no separate API service.
+- The brief, the score, the half-life, and the simulator are pure functions.
 - Investigations live in `localStorage` on the device. There are no accounts.
-- Research agents are one server call, three roles, no loop. The key never reaches the browser.
+- The interface does not call a language model.
 
 See [docs/architecture.md](docs/architecture.md) and [docs/methodology.md](docs/methodology.md).
 
@@ -65,9 +62,7 @@ See [docs/architecture.md](docs/architecture.md) and [docs/methodology.md](docs/
 - React 19, TanStack Start / Router, TypeScript
 - Tailwind CSS 4
 - Zustand for local persistence
-- Recharts for series charts
-- Node test runner for the formula tests
-- Optional model: `grok-4.5` via the xAI chat API, only when the host injects `XAI_API_KEY`
+- Node's test runner for the formula tests
 
 Versions are pinned in `package.json` and `package-lock.json`.
 
@@ -79,11 +74,11 @@ Windows, macOS, or Linux:
 2. Clone the repository and open a terminal in the project folder.
 3. `npm install`
 4. `npm run dev`
-5. Open the local address the dev script prints. The app is the page, not a separate backend.
+5. Open the local address the dev script prints.
 
-`XAI_API_KEY` is optional. Do not commit a key. The host may inject one for the server. See `.env.example`. The app works without it.
+No API key is required. Do not commit secrets. See `.env.example`.
 
-`npm run build` produces the production bundle. `npm test` runs formula tests and the workspace checks.
+`npm run test:lab` runs the formula tests. `npm run typecheck` checks TypeScript. `npm run build` produces the production bundle.
 
 ## Usage
 
@@ -125,10 +120,10 @@ The lab does not call a model. A brief is a local reading of the question you ty
 ## Testing
 
 ```bash
-npm test
+npm run test:lab
 ```
 
-The culture formula tests cover single observations, missing values, duplicates, half-life, score renormalization, simulator arithmetic, and the refusal to invent a history for an unknown question. In this build, those tests passed: 18 cases, 0 failures.
+Those tests cover single observations, missing values, duplicates, half-life, score renormalization, simulator arithmetic, and the refusal to invent a history for an unknown question. Latest local run: 22 passed, 0 failed.
 
 ## Limitations
 
@@ -139,15 +134,12 @@ The culture formula tests cover single observations, missing values, duplicates,
 - Scenario factors (0.5, 1, 1.6) are illustrative.
 - There is no forecast, and no claim of commercial accuracy.
 - Browser storage does not sync across devices.
-- The optional model can still be wrong. It is not allowed to mint citations, and the app checks evidence ids, but it cannot prove the prose is true.
 
 ## Roadmap
 
 Implemented: the list under Features.
 
-Experimental: the optional Grok pass. It depends on a server key and is capped to one short request per click.
-
-Not built, and not pretended: live TikTok, Instagram, Reddit, or search monitoring; accounts; a shared database; a trained opportunity model; automatic scraping.
+Not built, and not pretended: live TikTok, Instagram, Reddit, or search monitoring; accounts; a shared database; a trained opportunity model; automatic scraping; a model writing the brief.
 
 ## Contributing
 
