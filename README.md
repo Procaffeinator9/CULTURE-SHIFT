@@ -26,7 +26,7 @@ These work in the app:
 - Culture Half-Life Lab, including labelled synthetic series so the formula can be inspected.
 - Investigations saved in the browser: rename, reopen, compare, delete.
 - Markdown and JSON export.
-- Settings for weights, the CSV template, and a clear-data action.
+- Settings for weights, an optional model key, the CSV template, and a clear-data action.
 
 ## Screenshots
 
@@ -108,7 +108,7 @@ Detail is in [docs/methodology.md](docs/methodology.md). Short version:
 
 ## Interpretation
 
-The lab does not call a model. A brief is a local reading of the question you typed and the observations you added. It stays a hypothesis until those observations exist. The simulator never takes numbers from that prose.
+The lab does not call a model unless you save your own key under Settings. That key stays in this browser. It is sent only when you click **Ask your model**, and it is never written into an export or into git. The local brief still works with no key. The simulator never takes numbers from model prose.
 
 ## Data sources
 
@@ -139,7 +139,7 @@ Those tests cover single observations, missing values, duplicates, half-life, sc
 
 Implemented: the list under Features.
 
-Not built, and not pretended: live TikTok, Instagram, Reddit, or search monitoring; accounts; a shared database; a trained opportunity model; automatic scraping; a model writing the brief.
+Not built, and not pretended: live TikTok, Instagram, Reddit, or search monitoring; accounts; a shared database; a trained opportunity model; automatic scraping. A model is used only if you add your own key.
 
 ## Contributing
 

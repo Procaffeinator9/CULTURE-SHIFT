@@ -99,7 +99,7 @@ export type BotMeta = {
 };
 
 export type AgentRecord = {
-  source: "grok-4.5" | "non-ai-demo" | "mixed";
+  source: "user-key" | "grok-4.5" | "non-ai-demo" | "mixed";
   model: string | null;
   promptVersion: string;
   at: string;

@@ -1,9 +1,10 @@
-import { useState } from "react";
+import { useEffect, useState } from "react";
 import { createFileRoute } from "@tanstack/react-router";
+import { AI_PRESETS, clearAi, emptyAi, loadAi, maskKey, saveAi, type AiProvider, type AiSettings } from "@/lib/culture/ai-settings";
 import { CSV_TEMPLATE } from "@/lib/culture/csv";
 import { useLab } from "@/lib/culture/store";
 import { DEFAULT_WEIGHTS, DIMENSIONS } from "@/lib/culture/types";
-import { Button, downloadText, PageHeader, Panel } from "@/components/ui";
+import { Button, downloadText, fieldClass, PageHeader, Panel } from "@/components/ui";
 
 export const Route = createFileRoute("/settings")({ component: SettingsPage });
 
@@ -18,7 +19,7 @@ function SettingsPage() {
       <PageHeader
         kicker="Lab / Settings"
         title="Sources, weights, and what this lab will not pretend."
-        lede="The shelf is local to this browser. No social platform is connected. No key is stored in an investigation."
+        lede="The shelf is local to this browser. A model key, if you add one, stays on this device and is never written into an export."
       />
 
       <div className="space-y-4">
@@ -34,6 +35,8 @@ function SettingsPage() {
             Download CSV template
           </Button>
         </Panel>
+
+        <AiKeyPanel />
 
         <Panel>
           <h2 className="font-serif text-2xl">Opportunity weights</h2>
@@ -64,13 +67,6 @@ function SettingsPage() {
         </Panel>
 
         <Panel>
-          <h2 className="font-serif text-2xl">No model in this lab</h2>
-          <p className="mt-2 text-sm text-muted">
-            Briefs are written by local rules from your question and the observations you add. Switching sections does not call Grok. The simulator math is separate and is never overwritten by prose.
-          </p>
-        </Panel>
-
-        <Panel>
           <h2 className="font-serif text-2xl">Clear this device</h2>
           <p className="mt-2 text-sm text-muted">Deletes saved investigations and weight changes in this browser. It does not affect anyone else.</p>
           {confirm ? (
@@ -84,5 +80,115 @@ function SettingsPage() {
         </Panel>
       </div>
     </div>
+  );
+}
+
+function AiKeyPanel() {
+  const [form, setForm] = useState<AiSettings>(emptyAi());
+  const [saved, setSaved] = useState(false);
+  const [note, setNote] = useState("");
+
+  useEffect(() => {
+    const existing = loadAi();
+    if (existing) {
+      setForm({ ...existing, apiKey: "" });
+      setSaved(true);
+    }
+  }, []);
+
+  function choose(provider: AiProvider) {
+    const preset = AI_PRESETS[provider];
+    setForm((current) => ({
+      ...current,
+      provider,
+      baseUrl: preset.baseUrl || current.baseUrl,
+      model: preset.model || current.model,
+    }));
+  }
+
+  function store() {
+    const apiKey = form.apiKey.trim();
+    const existing = loadAi();
+    const next = { ...form, apiKey: apiKey || existing?.apiKey || "" };
+    if (next.apiKey.length < 8) {
+      setNote("Paste a key before saving.");
+      return;
+    }
+    if (!next.baseUrl.trim() || !next.model.trim()) {
+      setNote("The address and the model name are both required.");
+      return;
+    }
+    saveAi(next);
+    setForm({ ...next, apiKey: "" });
+    setSaved(true);
+    setNote("Saved on this device. It is not part of an investigation.");
+  }
+
+  return (
+    <Panel>
+      <h2 className="font-serif text-2xl">Your model</h2>
+      <p className="mt-2 text-sm text-muted">
+        Optional. The brief still works with no key. If you save one, Quick Scan can send a single request to that provider. The key is not uploaded with a report and is not stored in git.
+      </p>
+      <div className="mt-4 flex flex-wrap gap-2">
+        {(Object.keys(AI_PRESETS) as AiProvider[]).map((id) => (
+          <button
+            key={id}
+            type="button"
+            aria-pressed={form.provider === id}
+            onClick={() => choose(id)}
+            className={`min-h-11 px-3 text-sm ${form.provider === id ? "bg-lime text-ink" : "bg-panel-2 text-muted"}`}
+          >
+            {AI_PRESETS[id].label}
+          </button>
+        ))}
+      </div>
+      <label className="mt-4 block">
+        <span className="mb-1 block font-mono text-xs tracking-widest text-muted uppercase">API address</span>
+        <input
+          className={fieldClass}
+          value={form.baseUrl}
+          placeholder="https://api.x.ai/v1"
+          onChange={(event) => setForm({ ...form, baseUrl: event.target.value })}
+        />
+      </label>
+      <label className="mt-3 block">
+        <span className="mb-1 block font-mono text-xs tracking-widest text-muted uppercase">Model</span>
+        <input
+          className={fieldClass}
+          value={form.model}
+          placeholder="grok-4.5"
+          onChange={(event) => setForm({ ...form, model: event.target.value })}
+        />
+      </label>
+      <label className="mt-3 block">
+        <span className="mb-1 block font-mono text-xs tracking-widest text-muted uppercase">API key</span>
+        <input
+          className={fieldClass}
+          type="password"
+          autoComplete="off"
+          value={form.apiKey}
+          placeholder={saved ? `Saved ${maskKey(loadAi()?.apiKey ?? "")}. Paste to replace.` : "Paste a key"}
+          onChange={(event) => setForm({ ...form, apiKey: event.target.value })}
+        />
+      </label>
+      <div className="mt-4 flex flex-wrap gap-2">
+        <Button onClick={store}>Save key on this device</Button>
+        {saved ? (
+          <Button
+            variant="ghost"
+            onClick={() => {
+              clearAi();
+              setSaved(false);
+              setForm(emptyAi(form.provider));
+              setNote("Key removed from this browser.");
+            }}
+          >
+            Remove key
+          </Button>
+        ) : null}
+      </div>
+      {note ? <p className="mt-3 text-sm text-muted">{note}</p> : null}
+    </Panel>
   );
 }

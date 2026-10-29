@@ -3,9 +3,12 @@ import { Link } from "@tanstack/react-router";
 import { analyzeObservations } from "@/lib/culture/analyze";
 import { buildBrief } from "@/lib/culture/brief";
 import { CSV_TEMPLATE, parseObservationCsv } from "@/lib/culture/csv";
+import { loadAi } from "@/lib/culture/ai-settings";
 import { investigationJson, investigationMarkdown } from "@/lib/culture/report";
+import { askWithUserKey } from "@/lib/culture/research";
 import { newId, useLab } from "@/lib/culture/store";
 import { BRAND_CATEGORIES } from "@/lib/culture/sample";
+import { PROMPT_VERSION } from "@/lib/culture/types";
 import type { AgentRecord, EvidenceKind, Investigation, Observation, Provenance } from "@/lib/culture/types";
 import { AnalysisView } from "./analysis-view";
 import { BriefView } from "./brief-view";
@@ -56,10 +59,11 @@ export function LabWorkspace({
   const [observations, setObservations] = useState<Observation[]>(investigation?.observations ?? []);
   const [brandFit, setBrandFit] = useState<number | null>(investigation?.brandFitAssumption ?? null);
   const [novelty, setNovelty] = useState<number | null>(investigation?.noveltyAssumption ?? null);
-  const [agent] = useState<AgentRecord | null>(investigation?.agent ?? null);
+  const [agent, setAgent] = useState<AgentRecord | null>(investigation?.agent ?? null);
   const [savedId, setSavedId] = useState<string | null>(investigation?.id ?? null);
   const [createdAt] = useState(investigation?.createdAt ?? new Date().toISOString());
   const [status, setStatus] = useState("");
+  const [busy, setBusy] = useState(false);
   const [showObservations, setShowObservations] = useState(mode === "investigate" || (investigation?.observations.length ?? 0) > 0);
   const [csvNotes, setCsvNotes] = useState<string[]>([]);
   const [date, setDate] = useState("");
@@ -167,6 +171,56 @@ export function LabWorkspace({
     });
   }
 
+  async function askModel() {
+    if (!question.trim()) {
+      setStatus("Write a question first.");
+      return;
+    }
+    const ai = loadAi();
+    if (!ai) {
+      setStatus("No key on this device. Add one in Settings. The local brief is unchanged.");
+      return;
+    }
+    setBusy(true);
+    setStatus("Asking your model. One request. The calculator is not involved.");
+    try {
+      const result = await askWithUserKey({
+        data: {
+          apiKey: ai.apiKey,
+          baseUrl: ai.baseUrl,
+          model: ai.model,
+          question: question.trim(),
+          context,
+          evidence: observations.map((obs) => ({
+            id: obs.id,
+            date: obs.date,
+            signal: obs.signal,
+            note: obs.note,
+            source: obs.source,
+            kind: obs.kind,
+          })),
+        },
+      });
+      if (!result.ok) {
+        setStatus(result.message);
+        return;
+      }
+      setAgent({
+        source: "user-key",
+        model: result.model,
+        promptVersion: result.promptVersion || PROMPT_VERSION,
+        at: new Date().toISOString(),
+        warnings: result.warnings,
+        output: result.output,
+      });
+      setStatus("Model text is below. It is not evidence, and it does not change the score.");
+    } catch (error) {
+      setStatus(error instanceof Error ? error.message : "The model request failed.");
+    } finally {
+      setBusy(false);
+    }
+  }
+
   function exportMarkdown() {
     const record = currentRecord(savedId ?? "unsaved");
     const markdown = investigationMarkdown(record, brief, analysis, new Date().toISOString());
@@ -260,6 +314,9 @@ export function LabWorkspace({
         <Button variant="ghost" onClick={exportJson}>
           Export JSON
         </Button>
+        <Button variant="violet" onClick={() => void askModel()} disabled={busy}>
+          {busy ? "Asking your model…" : "Ask your model"}
+        </Button>
         <Link
           to="/simulator"
           search={{ q: question }}
@@ -281,6 +338,8 @@ export function LabWorkspace({
           </p>
         </div>
       </div>
+
+      {agent ? <ModelReading agent={agent} /> : null}
 
       <div className="mt-6">
         <button
@@ -370,6 +429,53 @@ export function LabWorkspace({
             )}
           </Panel>
         ) : null}
+      </div>
+    </div>
+  );
+}
+
+function ModelReading({ agent }: { agent: AgentRecord }) {
+  const a = agent.output.anthropologist;
+  const s = agent.output.skeptic;
+  const g = agent.output.strategist;
+  return (
+    <div className="mt-6">
+      <div className="mb-3 flex flex-wrap items-center gap-3">
+        <Tag kind="hypothesis">Your model · {agent.model}</Tag>
+        <span className="text-xs text-muted">Not evidence. Not used by the score or the simulator.</span>
+      </div>
+      {agent.warnings.length ? <p className="mb-3 text-xs text-warn">{agent.warnings[0]}</p> : null}
+      <div className="grid gap-4 lg:grid-cols-3">
+        <Panel>
+          <h3 className="font-serif text-xl">Anthropologist</h3>
+          <ul className="mt-3 space-y-3 text-sm">
+            {a.hypotheses.map((item) => (
+              <li key={item.claim}>
+                <p>{item.claim}</p>
+                <p className="mt-1 font-mono text-xs text-muted">
+                  Evidence: {item.evidenceIds.length ? item.evidenceIds.join(", ") : "none cited"}
+                </p>
+              </li>
+            ))}
+          </ul>
+        </Panel>
+        <Panel>
+          <h3 className="font-serif text-xl">Skeptic</h3>
+          <p className="mt-2 text-sm">{s.insufficient ? "Evidence is insufficient." : "The skeptic did not call the file insufficient."}</p>
+          <ul className="mt-3 space-y-2 text-sm text-muted">
+            {[...s.weakAssumptions, ...s.missingEvidence, ...s.whatWouldChange].filter(Boolean).map((item) => (
+              <li key={item}>{item}</li>
+            ))}
+          </ul>
+        </Panel>
+        <Panel>
+          <h3 className="font-serif text-xl">Brand strategist</h3>
+          <ul className="mt-3 space-y-2 text-sm">
+            <li>{g.concept}</li>
+            <li className="text-muted">{g.experiment}</li>
+            <li className="text-muted">{g.budgetAssumption}</li>
+          </ul>
+        </Panel>
       </div>
     </div>
   );

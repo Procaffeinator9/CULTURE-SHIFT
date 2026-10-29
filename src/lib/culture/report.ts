@@ -63,9 +63,9 @@ function agentBlock(agent: AgentRecord | null): string {
       ? (["anthropologist", "skeptic", "strategist"] as const)
           .map((role) => `${role}: ${agent.bots?.[role]?.source ?? agent.source}`)
           .join("; ")
-      : agent.source === "grok-4.5"
-        ? `Model ${agent.model}`
-        : "Non-AI demo logic. No model was called.";
+      : agent.source === "user-key" || agent.source === "grok-4.5"
+        ? `Your model ${agent.model ?? ""}. This prose is not a measurement and is not used by the calculator.`.trim()
+        : "No model text is attached.";
   const a = agent.output.anthropologist;
   const s = agent.output.skeptic;
   const g = agent.output.strategist;
