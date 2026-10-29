@@ -3,7 +3,7 @@ import { Link } from "@tanstack/react-router";
 import { analyzeObservations } from "@/lib/culture/analyze";
 import { buildBrief } from "@/lib/culture/brief";
 import { CSV_TEMPLATE, parseObservationCsv } from "@/lib/culture/csv";
-import { loadAi } from "@/lib/culture/ai-settings";
+import { loadAi, useAiStatus } from "@/lib/culture/ai-settings";
 import { investigationJson, investigationMarkdown } from "@/lib/culture/report";
 import { askWithUserKey } from "@/lib/culture/research";
 import { newId, useLab } from "@/lib/culture/store";
@@ -64,6 +64,7 @@ export function LabWorkspace({
   const [createdAt] = useState(investigation?.createdAt ?? new Date().toISOString());
   const [status, setStatus] = useState("");
   const [busy, setBusy] = useState(false);
+  const model = useAiStatus();
   const [showObservations, setShowObservations] = useState(mode === "investigate" || (investigation?.observations.length ?? 0) > 0);
   const [csvNotes, setCsvNotes] = useState<string[]>([]);
   const [date, setDate] = useState("");
@@ -314,9 +315,18 @@ export function LabWorkspace({
         <Button variant="ghost" onClick={exportJson}>
           Export JSON
         </Button>
-        <Button variant="violet" onClick={() => void askModel()} disabled={busy}>
-          {busy ? "Asking your model…" : "Ask your model"}
-        </Button>
+        {model.ready ? (
+          <Button variant="violet" onClick={() => void askModel()} disabled={busy}>
+            {busy ? "Asking your model…" : `Ask ${model.label}`}
+          </Button>
+        ) : (
+          <Link
+            to="/settings"
+            className="inline-flex min-h-11 items-center border border-line px-4 text-sm text-violet transition-colors duration-200 hover:border-violet"
+          >
+            Add a model key
+          </Link>
+        )}
         <Link
           to="/simulator"
           search={{ q: question }}
@@ -339,7 +349,11 @@ export function LabWorkspace({
         </div>
       </div>
 
-      {agent ? <ModelReading agent={agent} /> : null}
+      {agent ? (
+        <div className="page-in">
+          <ModelReading agent={agent} />
+        </div>
+      ) : null}
 
       <div className="mt-6">
         <button

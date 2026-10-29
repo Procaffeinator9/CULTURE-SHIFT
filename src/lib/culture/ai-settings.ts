@@ -1,3 +1,5 @@
+import { useEffect, useState } from "react";
+
 export type AiProvider = "xai" | "openai" | "compatible";
 
 export type AiSettings = {
@@ -8,6 +10,16 @@ export type AiSettings = {
 };
 
 const STORAGE_KEY = "culture-shift-ai";
+const listeners = new Set<() => void>();
+
+function emitAi(): void {
+  listeners.forEach((listener) => listener());
+}
+
+export function subscribeAi(listener: () => void): () => void {
+  listeners.add(listener);
+  return () => listeners.delete(listener);
+}
 
 export const AI_PRESETS: Record<AiProvider, { baseUrl: string; model: string; label: string }> = {
   xai: { baseUrl: "https://api.x.ai/v1", model: "grok-4.5", label: "xAI (Grok)" },
@@ -43,13 +55,32 @@ export function loadAi(): AiSettings | null {
 
 export function saveAi(settings: AiSettings): void {
   window.localStorage.setItem(STORAGE_KEY, JSON.stringify(settings));
+  emitAi();
 }
 
 export function clearAi(): void {
   window.localStorage.removeItem(STORAGE_KEY);
+  emitAi();
 }
 
 export function maskKey(apiKey: string): string {
   const tail = apiKey.slice(-4);
   return tail ? `••••${tail}` : "";
+}
+
+export function useAiStatus(): { ready: boolean; label: string } {
+  const [status, setStatus] = useState({ ready: false, label: "No model key" });
+  useEffect(() => {
+    const read = () => {
+      const ai = loadAi();
+      setStatus(
+        ai
+          ? { ready: true, label: `${AI_PRESETS[ai.provider].label} · ${ai.model}` }
+          : { ready: false, label: "No model key" },
+      );
+    };
+    read();
+    return subscribeAi(read);
+  }, []);
+  return status;
 }

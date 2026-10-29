@@ -11,6 +11,7 @@ import {
   Timer,
 } from "lucide-react";
 import { useLab } from "@/lib/culture/store";
+import { useAiStatus } from "@/lib/culture/ai-settings";
 import { cn } from "@/lib/utils";
 
 const NAV = [
@@ -28,6 +29,7 @@ export function Shell({ children }: { children: React.ReactNode }) {
   const pathname = useRouterState({ select: (state) => state.location.pathname });
   const draft = useLab((state) => state.draft);
   const question = draft?.question?.trim() ?? "";
+  const model = useAiStatus();
 
   useEffect(() => {
     void Promise.resolve(useLab.persist.rehydrate()).finally(() => {
@@ -36,7 +38,8 @@ export function Shell({ children }: { children: React.ReactNode }) {
   }, []);
 
   useEffect(() => {
-    window.scrollTo(0, 0);
+    const reduce = window.matchMedia("(prefers-reduced-motion: reduce)").matches;
+    window.scrollTo({ top: 0, behavior: reduce ? "auto" : "smooth" });
   }, [pathname]);
 
   return (
@@ -55,7 +58,7 @@ export function Shell({ children }: { children: React.ReactNode }) {
             const active = item.exact ? pathname === item.to : pathname === item.to || pathname.startsWith(`${item.to}/`);
             const Icon = item.icon;
             const className = cn(
-              "flex min-h-11 shrink-0 items-center gap-2 border-l-2 border-transparent px-3 text-sm text-muted transition-colors duration-200 hover:text-fg",
+              "flex min-h-11 shrink-0 items-center gap-2 border-l-2 border-transparent px-3 text-sm text-muted transition-[color,background-color,border-color] duration-200 hover:text-fg",
               active && "border-lime bg-panel-2 text-fg",
             );
             const inner = (
@@ -97,6 +100,15 @@ export function Shell({ children }: { children: React.ReactNode }) {
             );
           })}
         </nav>
+        <div className="hidden px-3 pb-6 md:block">
+          <Link
+            to="/settings"
+            className="block border border-line px-3 py-3 text-xs text-muted transition-colors duration-200 hover:border-lime hover:text-fg"
+          >
+            <span className="block font-mono tracking-widest uppercase">{model.ready ? "Model ready" : "Add a model"}</span>
+            <span className="mt-1 block truncate">{model.label}</span>
+          </Link>
+        </div>
       </aside>
       <div className="md:pl-60">
         <main className="px-4 py-6 md:px-10 md:py-10">
@@ -105,7 +117,9 @@ export function Shell({ children }: { children: React.ReactNode }) {
               Working question · {question}
             </p>
           ) : null}
-          {children}
+          <div key={pathname} className="page-in">
+            {children}
+          </div>
         </main>
       </div>
     </div>

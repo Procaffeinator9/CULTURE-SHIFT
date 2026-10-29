@@ -137,7 +137,7 @@ function AiKeyPanel() {
             type="button"
             aria-pressed={form.provider === id}
             onClick={() => choose(id)}
-            className={`min-h-11 px-3 text-sm ${form.provider === id ? "bg-lime text-ink" : "bg-panel-2 text-muted"}`}
+            className={`min-h-11 px-3 text-sm transition-colors duration-200 ${form.provider === id ? "bg-lime text-ink" : "bg-panel-2 text-muted hover:text-fg"}`}
           >
             {AI_PRESETS[id].label}
           </button>
