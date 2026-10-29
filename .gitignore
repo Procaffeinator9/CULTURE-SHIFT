@@ -16,3 +16,5 @@ AGENTS.md
 *.sqlite
 *.sqlite3
 coverage/
+screenshots/grok-bots.png
+screenshots/app-builder-*.json
