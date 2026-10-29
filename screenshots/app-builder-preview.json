@@ -1,0 +1,36 @@
+{
+  "url": "http://127.0.0.1:8080/",
+  "viewports": {
+    "desktop": {
+      "width": 1280,
+      "height": 800,
+      "status": 200,
+      "title": "CULTURE//SHIFT",
+      "hasCanvas": false,
+      "bodyTextLen": 906,
+      "bodyTextHash": "7864e67b2482b494df44fbad0c0094cf072e6797fe94bae75f42f14ebace6840",
+      "bodyTextPrefix": "CULTURE//SHIFT SIGNALS · EVIDENCE · DECISIONS Overview Trend Rad",
+      "horizontalOverflow": false,
+      "consoleErrors": [],
+      "pageErrors": [],
+      "screenshot": "/workspace/screenshots/app-builder-preview.png"
+    },
+    "mobile": {
+      "width": 390,
+      "height": 844,
+      "status": 200,
+      "title": "CULTURE//SHIFT",
+      "hasCanvas": false,
+      "bodyTextLen": 875,
+      "bodyTextHash": "48e383f99cff4355d2cc45b1ef7419a813e0c826a679e8be714da92d7311f4e0",
+      "bodyTextPrefix": "CULTURE//SHIFT Overview Trend Radar Quick Scan Investigations Cu",
+      "horizontalOverflow": false,
+      "consoleErrors": [],
+      "pageErrors": [],
+      "screenshot": "/workspace/screenshots/app-builder-preview-mobile.png"
+    }
+  },
+  "brandWarnings": [],
+  "authWarnings": [],
+  "verdictFile": "/workspace/screenshots/app-builder-preview.json"
+}
